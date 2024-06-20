@@ -98,6 +98,10 @@ class Quiz:
             scored_answers.append(question._score(answer))
         return scored_answers
 
+    def hide_correct_answers(self) -> None:
+        for question in self.questions:
+            question.hide_correct_options()
+
 
 class AnswerOption(str): ...
 
@@ -130,20 +134,30 @@ class Question:
 
         self.text = text
         self.options = options
-        self.correct_options = correct_options
+        self._correct_options = correct_options
+        self._hidden_correct_options = False
 
-    def _is_single_choice(self) -> bool:
-        return len(self.correct_options) == 1
+    @property
+    def correct_options(self) -> set[AnswerOption]:
+        if self._hidden_correct_options:
+            return set()
+        return self._correct_options
+
+    def hide_correct_options(self) -> None:
+        self._hidden_correct_options = True
+
+    def is_single_choice(self) -> bool:
+        return len(self._correct_options) == 1
 
     def _is_multiple_choice(self) -> bool:
-        return len(self.correct_options) > 1
+        return len(self._correct_options) > 1
 
     def _validate_answer(self, answer: "Answer") -> list[str]:
         if answer.is_empty():
             return []
 
         errors = []
-        if not answer.is_single() and self._is_single_choice():
+        if not answer.is_single() and self.is_single_choice():
             errors.append(f"Question '{self.text}' must have a single choice answer")
 
         if len(answer.options.intersection(self.options)) != len(answer.options):
@@ -153,14 +167,21 @@ class Question:
         return errors
 
     def _score(self, answer: "Answer") -> "Answer":
-        if len(self.correct_options) == len(self.options):
+        if self.is_single_choice():
+            if answer.is_empty():
+                return answer.with_score(0)
+            if answer.options == self._correct_options:
+                return answer.with_score(1)
+            return answer.with_score(-1)
+
+        if len(self._correct_options) == len(self.options):
             wrong_question_weight = 0
         else:
-            wrong_question_weight = 1 / (len(self.options) - len(self.correct_options))
-        right_question_weight = 1 / len(self.correct_options)
+            wrong_question_weight = 1 / (len(self.options) - len(self._correct_options))
+        right_question_weight = 1 / len(self._correct_options)
         score = 0
         for option in answer.options:
-            if option in self.correct_options:
+            if option in self._correct_options:
                 score += right_question_weight
             else:
                 score -= wrong_question_weight

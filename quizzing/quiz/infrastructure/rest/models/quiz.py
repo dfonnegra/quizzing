@@ -29,6 +29,7 @@ class QuestionRead(BaseModel):
     text: str
     options: list[str]
     correct_options: list[str]
+    is_single_choice: bool
 
     @classmethod
     def from_entity(cls, question: Question) -> "QuestionRead":
@@ -36,6 +37,7 @@ class QuestionRead(BaseModel):
             text=question.text,
             options=[str(q) for q in question.options],
             correct_options=[str(q) for q in question.correct_options],
+            is_single_choice=question.is_single_choice(),
         )
 
 

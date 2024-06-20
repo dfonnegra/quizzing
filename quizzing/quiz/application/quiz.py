@@ -29,13 +29,19 @@ class QuizService(TransactionalServiceMixin):
         quiz = DomainRegistry.quizzes.get(quiz_id)
         if not quiz.is_published() and quiz.author_id != author.id:
             raise NotFound(f"Quiz {quiz_id} not found")
+        if quiz.author_id != author.id:
+            quiz.hide_correct_answers()
         return quiz
 
     @transactional()
     def list(self, author: Author, filter_: "QuizFilter") -> list[Quiz]:
         if filter_.status is None or filter_.status != QuizStatus.PUBLISHED:
             filter_.author_id = author.id
-        return DomainRegistry.quizzes.list(filter_)
+        quizzes = DomainRegistry.quizzes.list(filter_)
+        for quiz in quizzes:
+            if quiz.author_id != author.id:
+                quiz.hide_correct_answers()
+        return quizzes
 
     @transactional(IsolationLevel.SERIALIZABLE)
     def edit(
