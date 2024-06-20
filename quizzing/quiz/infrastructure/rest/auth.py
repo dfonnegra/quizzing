@@ -13,7 +13,7 @@ from .models.auth import Token
 from .registry import RestRegistry
 
 router = APIRouter(prefix="/api")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 RestRegistry.initialize()
 
 
@@ -31,7 +31,7 @@ def login(
     except NotFound:
         raise invalid_email_or_password
 
-    if author.verify_password(form_data.password):
+    if not author.verify_password(form_data.password):
         raise invalid_email_or_password
 
     access_token_expires = timedelta(minutes=config.ACCESS_TOKEN_EXPIRE_MINUTES)

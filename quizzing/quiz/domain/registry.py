@@ -1,18 +1,21 @@
-from .ports import AuthorRepository, QuizRepository, SubmissionRepository
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .ports import AuthorRepository, QuizRepository, SubmissionRepository
 
 
 class DomainRegistry:
-    quiz: QuizRepository
-    submissions: SubmissionRepository
-    authors: AuthorRepository
+    quizzes: "QuizRepository"
+    submissions: "SubmissionRepository"
+    authors: "AuthorRepository"
 
     @classmethod
     def initialize(
         cls,
-        quiz: QuizRepository,
-        submission: SubmissionRepository,
-        author: AuthorRepository,
+        quiz: "QuizRepository",
+        submission: "SubmissionRepository",
+        author: "AuthorRepository",
     ) -> None:
-        cls.quiz = quiz
+        cls.quizzes = quiz
         cls.submissions = submission
         cls.authors = author

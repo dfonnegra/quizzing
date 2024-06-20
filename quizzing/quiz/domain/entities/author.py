@@ -39,3 +39,7 @@ class Author:
     @property
     def id(self) -> AuthorID:
         return self._id
+
+    @property
+    def hashed_password(self) -> str:
+        return self._hashed_password

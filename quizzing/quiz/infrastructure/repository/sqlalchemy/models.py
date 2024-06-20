@@ -26,6 +26,7 @@ quiz_table = Table(
     Column("id", String, primary_key=True),
     Column("title", String, nullable=False),
     Column("author_id", String, ForeignKey("author.id"), nullable=False),
+    Column("status", Enum("draft", "published", name="quiz_status")),
 )
 
 question_table = Table(
@@ -44,10 +45,10 @@ submission_table = Table(
     get_metadata(),
     Column("id", String, primary_key=True),
     Column("quiz_id", String, ForeignKey("quiz.id"), nullable=False),
-    Column("user_id", String, ForeignKey("author.id"), nullable=False),
+    Column("author_id", String, ForeignKey("author.id"), nullable=False),
     Column("status", Enum("in_progress", "completed", name="submission_status")),
     Column("score", Float, nullable=True),
-    UniqueConstraint("quiz_id", "user_id"),
+    UniqueConstraint("quiz_id", "author_id"),
 )
 
 answer_table = Table(

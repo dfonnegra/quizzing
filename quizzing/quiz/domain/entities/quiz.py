@@ -50,10 +50,6 @@ class Quiz:
         self,
         questions: list["Question"],
     ):
-        if len(questions) == 0:
-            raise QuizValidationError(
-                [f"Quiz {self.title} must have at least one question"]
-            )
         if len(questions) > 10:
             raise QuizValidationError(
                 [f"Quiz {self.title} can have at most 10 questions"]
@@ -66,6 +62,11 @@ class Quiz:
         self.questions = questions
 
     def publish(self) -> None:
+        if len(self.questions) == 0:
+            raise QuizValidationError(
+                [f"Quiz {self.title} must have at least one question"]
+            )
+
         self.status = QuizStatus.PUBLISHED
 
     def is_published(self) -> bool:
@@ -78,14 +79,19 @@ class Quiz:
                     f"Quiz {self.title} has {len(self.questions)} questions, but {len(answers)} answers were submitted"
                 ]
             )
+        errors: list[str] = []
         for question, answer in zip(self.questions, answers):
             if answer is None:
                 continue
-            question._validate_answer(answer)
+            answer_errors = question._validate_answer(answer)
+            if answer_errors is not None:
+                errors.extend(answer_errors)
+        if len(errors) > 0:
+            raise SubmissionValidationError(errors)
 
     def score(self, answers: list["Answer"]) -> list["Answer"]:
         self.validate_answers(answers)
-        scored_answers: list[Answer] = []
+        scored_answers: list["Answer"] = []
         for question, answer in zip(self.questions, answers):
             if answer is None:
                 continue
@@ -132,17 +138,22 @@ class Question:
     def _is_multiple_choice(self) -> bool:
         return len(self.correct_options) > 1
 
-    def _validate_answer(self, answer: "Answer"):
+    def _validate_answer(self, answer: "Answer") -> list[str]:
         if answer.is_empty():
-            return
+            return []
 
-        if answer.is_single() and self._is_single_choice():
-            raise SubmissionValidationError(
-                [f"Question '{self.text}' must have a single choice answer"]
+        errors = []
+        if not answer.is_single() and self._is_single_choice():
+            errors.append(f"Question '{self.text}' must have a single choice answer")
+
+        if len(answer.options.intersection(self.options)) != len(answer.options):
+            errors.append(
+                f"Question '{self.text}' has invalid options {answer.options.difference(self.options)}"
             )
+        return errors
 
-    def _score(self, answer: "Answer") -> Answer:
-        if len(self.correct_options) == len(answer.options):
+    def _score(self, answer: "Answer") -> "Answer":
+        if len(self.correct_options) == len(self.options):
             wrong_question_weight = 0
         else:
             wrong_question_weight = 1 / (len(self.options) - len(self.correct_options))

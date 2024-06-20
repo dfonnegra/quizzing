@@ -19,3 +19,6 @@ handlers:
     filename: /var/log/quizzing.log
     maxBytes: 10485760
     backupCount: 10
+loggers:
+  uvicorn:
+    level: INFO

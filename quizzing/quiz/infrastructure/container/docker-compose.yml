@@ -1,0 +1,33 @@
+name: quizzing
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: quizzing
+      POSTGRES_DB: quizzing
+    volumes:
+      - /var/data/postgresql/quizzing:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - 5432:5432
+    logging:
+      driver: "local"
+
+  quiz:
+    build:
+      context: ../../../../
+      dockerfile: quizzing/quiz/infrastructure/container/Dockerfile
+    image: quizzing:quiz
+    ports:
+      - "9999:80"
+    env_file:
+      - .env
+    volumes:
+      - ../../../../quizzing:/app/quizzing
+    depends_on:
+      - db
+    logging:
+      driver: "local"
+

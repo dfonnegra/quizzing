@@ -21,12 +21,12 @@ class QuizService(TransactionalServiceMixin):
     @transactional()
     def create(self, author: Author, title: str) -> Quiz:
         quiz = Quiz.new(title, author.id)
-        DomainRegistry.quiz.save(quiz)
-        return DomainRegistry.quiz.get(quiz.id)
+        DomainRegistry.quizzes.save(quiz)
+        return DomainRegistry.quizzes.get(quiz.id)
 
     @transactional()
     def get(self, author: Author, quiz_id: str) -> Quiz:
-        quiz = DomainRegistry.quiz.get(quiz_id)
+        quiz = DomainRegistry.quizzes.get(quiz_id)
         if not quiz.is_published() and quiz.author_id != author.id:
             raise NotFound(f"Quiz {quiz_id} not found")
         return quiz
@@ -35,7 +35,7 @@ class QuizService(TransactionalServiceMixin):
     def list(self, author: Author, filter_: "QuizFilter") -> list[Quiz]:
         if filter_.status is None or filter_.status != QuizStatus.PUBLISHED:
             filter_.author_id = author.id
-        return DomainRegistry.quiz.list(filter_)
+        return DomainRegistry.quizzes.list(filter_)
 
     @transactional(IsolationLevel.SERIALIZABLE)
     def edit(
@@ -44,8 +44,15 @@ class QuizService(TransactionalServiceMixin):
         title: str,
         questions: "list[Question]",
     ) -> Quiz:
-        quiz = DomainRegistry.quiz.get(quiz_id)
+        quiz = DomainRegistry.quizzes.get(quiz_id)
         quiz.set_title(title)
         quiz.set_questions(questions)
-        DomainRegistry.quiz.save(quiz)
+        DomainRegistry.quizzes.save(quiz)
+        return quiz
+
+    @transactional()
+    def publish(self, quiz_id: QuizID) -> Quiz:
+        quiz = DomainRegistry.quizzes.get(quiz_id)
+        quiz.publish()
+        DomainRegistry.quizzes.save(quiz)
         return quiz
