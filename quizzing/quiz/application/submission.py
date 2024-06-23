@@ -10,6 +10,7 @@ from quizzing.pkg.transactional import (
 from ..domain.entities.author import Author
 from ..domain.entities.quiz import AnswerOption, Quiz, QuizID
 from ..domain.entities.submission import Answer, Submission, SubmissionID
+from ..domain.exceptions import NotFound, SubmissionValidationError
 from ..domain.registry import DomainRegistry
 
 
@@ -36,9 +37,7 @@ class SubmissionService(TransactionalServiceMixin):
     ) -> Submission:
         submission = DomainRegistry.submissions.get(submission_id)
         if submission.author_id != author.id:
-            raise ValueError(
-                f"Author {author.id} is not allowed to answer submission {submission_id}"
-            )
+            raise NotFound(f"Submission {submission_id} not found")
         submission.answer(answers)
         DomainRegistry.submissions.save(submission)
         return submission
@@ -47,9 +46,7 @@ class SubmissionService(TransactionalServiceMixin):
     def complete(self, author: Author, submission_id: SubmissionID) -> Submission:
         submission = DomainRegistry.submissions.get(submission_id)
         if submission.author_id != author.id:
-            raise ValueError(
-                f"Author {author.id} is not allowed to complete submission {submission_id}"
-            )
+            raise NotFound(f"Submission {submission_id} not found")
         submission.complete()
         DomainRegistry.submissions.save(submission)
         return submission

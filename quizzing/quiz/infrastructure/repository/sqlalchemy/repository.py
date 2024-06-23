@@ -130,6 +130,28 @@ class SQLASubmissionRepository:
     def transaction(self) -> SQLATransaction:
         return self._manager.transaction()
 
+    def by_quiz(
+        self, quiz_id: QuizID, page: int | None = None, page_size: int | None = None
+    ) -> list["Submission"]:
+        with self.transaction() as tx:
+            stmt = select(submission_table).where(submission_table.c.quiz_id == quiz_id)
+            if page is not None and page_size is not None:
+                stmt = stmt.offset((page - 1) * page_size).limit(page_size)
+            submissions = tx.session.execute(stmt).all()
+            stmt = select(answer_table).where(
+                answer_table.c.submission_id.in_([s.id for s in submissions])
+            )
+            answers = tx.session.execute(stmt).all()
+            submission_id_to_answers: dict[str, list[Row]] = {}
+            for row in answers:
+                submission_id_to_answers.setdefault(row.submission_id, []).append(row)
+            return [
+                self._submission_from_row(
+                    submission, submission_id_to_answers[submission.id]
+                )
+                for submission in submissions
+            ]
+
     def by_author(self, author_id: AuthorID) -> list["Submission"]:
         with self.transaction() as tx:
             stmt = (

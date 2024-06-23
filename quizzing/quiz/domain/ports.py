@@ -2,7 +2,7 @@ from typing import Protocol
 
 from .dto import QuizFilter
 from .entities.author import Author, AuthorID
-from .entities.quiz import Quiz
+from .entities.quiz import Quiz, QuizID
 from .entities.submission import Submission
 
 
@@ -14,6 +14,9 @@ class QuizRepository(Protocol):
 
 class SubmissionRepository(Protocol):
     def by_author(self, author_id: AuthorID) -> list["Submission"]: ...
+    def by_quiz(
+        self, quiz_id: QuizID, page: int | None = None, page_size: int | None = None
+    ) -> list["Submission"]: ...
     def save(self, submission: "Submission") -> None: ...
     def get(self, submission_id: str) -> "Submission": ...
 

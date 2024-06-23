@@ -10,6 +10,7 @@ from quizzing.pkg.transactional import (
 from ..domain.dto import QuizFilter
 from ..domain.entities.author import Author
 from ..domain.entities.quiz import Question, Quiz, QuizID, QuizStatus
+from ..domain.entities.submission import Submission
 from ..domain.exceptions import NotFound
 from ..domain.registry import DomainRegistry
 
@@ -46,19 +47,33 @@ class QuizService(TransactionalServiceMixin):
     @transactional(IsolationLevel.SERIALIZABLE)
     def edit(
         self,
+        author: Author,
         quiz_id: QuizID,
         title: str,
         questions: "list[Question]",
     ) -> Quiz:
         quiz = DomainRegistry.quizzes.get(quiz_id)
+        if quiz.author_id != author.id:
+            raise NotFound(f"Quiz {quiz_id} not found")
         quiz.set_title(title)
         quiz.set_questions(questions)
         DomainRegistry.quizzes.save(quiz)
         return quiz
 
     @transactional()
-    def publish(self, quiz_id: QuizID) -> Quiz:
+    def publish(self, author: Author, quiz_id: QuizID) -> Quiz:
         quiz = DomainRegistry.quizzes.get(quiz_id)
+        if quiz.author_id != author.id:
+            raise NotFound(f"Quiz {quiz_id} not found")
         quiz.publish()
         DomainRegistry.quizzes.save(quiz)
         return quiz
+
+    @transactional()
+    def submissions(
+        self, author: Author, quiz_id: QuizID, page: int, page_size: int
+    ) -> "list[Submission]":
+        quiz = DomainRegistry.quizzes.get(quiz_id)
+        if quiz.author_id != author.id:
+            raise NotFound(f"Quiz {quiz_id} not found")
+        return DomainRegistry.submissions.by_quiz(quiz_id, page, page_size)

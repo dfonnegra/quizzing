@@ -22,3 +22,6 @@ logs:
 
 psql:
 	docker-compose -f quizzing/quiz/infrastructure/container/docker-compose.yml run --rm db psql -p 5432 -U quizzing -h db
+
+test:
+	pytest -s

@@ -8,6 +8,7 @@ from quizzing.quiz.domain.exceptions import NotFound, QuizValidationError
 
 from .auth import authenticate
 from .models.quiz import QuizCreate, QuizRead, QuizUpdate
+from .models.submission import SubmissionRead
 from .registry import RestRegistry
 
 router = APIRouter(prefix="/quizzes")
@@ -44,9 +45,12 @@ def get_quiz(quiz_id: str, author: Author = Depends(authenticate)):
 
 
 @router.put("/{quiz_id}", response_model=QuizRead)
-def edit_quiz(quiz_id: str, quiz_update: QuizUpdate):
+def edit_quiz(
+    quiz_id: str, quiz_update: QuizUpdate, author: Author = Depends(authenticate)
+):
     try:
         quiz = RestRegistry.quizzes.edit(
+            author,
             QuizID(quiz_id),
             quiz_update.title,
             [q.to_entity() for q in quiz_update.questions],
@@ -66,9 +70,9 @@ def edit_quiz(quiz_id: str, quiz_update: QuizUpdate):
 
 
 @router.post("/{quiz_id}/publish", response_model=QuizRead)
-def publish_quiz(quiz_id: str):
+def publish_quiz(quiz_id: str, author: Author = Depends(authenticate)):
     try:
-        quiz = RestRegistry.quizzes.publish(QuizID(quiz_id))
+        quiz = RestRegistry.quizzes.publish(author, QuizID(quiz_id))
         return QuizRead.from_entity(quiz)
     except NotFound as e:
         raise HTTPException(
@@ -79,4 +83,23 @@ def publish_quiz(quiz_id: str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=e.errors,
+        )
+
+
+@router.get("/{quiz_id}/submissions", response_model=list[SubmissionRead])
+def list_submissions(
+    quiz_id: str,
+    page: int = 1,
+    page_size: int = 100,
+    author: Author = Depends(authenticate),
+):
+    try:
+        submissions = RestRegistry.quizzes.submissions(
+            author, QuizID(quiz_id), page, page_size
+        )
+        return [SubmissionRead.from_entity(submission) for submission in submissions]
+    except NotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
         )

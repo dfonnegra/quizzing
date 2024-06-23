@@ -73,6 +73,11 @@ class Quiz:
         return self.status == QuizStatus.PUBLISHED
 
     def validate_answers(self, answers: list["Answer"]):
+        if self.status != QuizStatus.PUBLISHED:
+            raise SubmissionValidationError(
+                [f"Quiz {self.title} is not published and cannot be answered"]
+            )
+
         if len(answers) != len(self.questions):
             raise SubmissionValidationError(
                 [
@@ -101,6 +106,9 @@ class Quiz:
     def hide_correct_answers(self) -> None:
         for question in self.questions:
             question.hide_correct_options()
+
+    def can_be_answered(self) -> bool:
+        return self.status == QuizStatus.PUBLISHED
 
 
 class AnswerOption(str): ...

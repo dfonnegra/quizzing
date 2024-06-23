@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
+from email_validator import EmailNotValidError, validate_email
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -27,7 +28,14 @@ def login(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        validate_email(form_data.username)
         author = RestRegistry.authors.by_email(form_data.username)
+    except EmailNotValidError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email address",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except NotFound:
         raise invalid_email_or_password
 
@@ -46,7 +54,14 @@ def signup(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ):
     try:
+        validate_email(form_data.username)
         RestRegistry.authors.create(form_data.username, form_data.password)
+    except EmailNotValidError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email address",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except AuthorExists:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

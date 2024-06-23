@@ -1,7 +1,7 @@
 from enum import Enum
 from uuid import uuid4
 
-from ..exceptions import SubmissionValidationError
+from ..exceptions import NotFound, SubmissionValidationError
 from ..registry import DomainRegistry
 from .author import AuthorID
 from .quiz import AnswerOption, QuizID
@@ -34,6 +34,10 @@ class Submission:
 
     @classmethod
     def start(cls, quiz_id: QuizID, author_id: AuthorID):
+        quiz = DomainRegistry.quizzes.get(quiz_id)
+        if not quiz.can_be_answered():
+            raise NotFound(f"Quiz {quiz_id} not found")
+
         submissions = DomainRegistry.submissions.by_author(author_id)
         for submission in submissions:
             if submission.quiz_id == quiz_id:
@@ -42,7 +46,6 @@ class Submission:
                 )
 
         id_ = SubmissionID(str(uuid4()))
-        quiz = DomainRegistry.quizzes.get(quiz_id)
         answers = [Answer.empty()] * len(quiz.questions)
         return cls(id_, quiz_id, author_id, cls.Status.IN_PROGRESS, answers, None)
 

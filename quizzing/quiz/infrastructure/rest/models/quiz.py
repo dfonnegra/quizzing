@@ -25,10 +25,20 @@ class QuizRead(BaseModel):
         )
 
 
-class QuestionRead(BaseModel):
+class QuestionCreate(BaseModel):
     text: str
     options: list[str]
     correct_options: list[str]
+
+    def to_entity(self) -> Question:
+        return Question(
+            text=self.text,
+            options=[AnswerOption(option) for option in self.options],
+            correct_options={AnswerOption(option) for option in self.correct_options},
+        )
+
+
+class QuestionRead(QuestionCreate):
     is_single_choice: bool
 
     @classmethod
@@ -38,15 +48,6 @@ class QuestionRead(BaseModel):
             options=[str(q) for q in question.options],
             correct_options=[str(q) for q in question.correct_options],
             is_single_choice=question.is_single_choice(),
-        )
-
-
-class QuestionCreate(QuestionRead):
-    def to_entity(self) -> Question:
-        return Question(
-            text=self.text,
-            options=[AnswerOption(option) for option in self.options],
-            correct_options={AnswerOption(option) for option in self.correct_options},
         )
 
 
